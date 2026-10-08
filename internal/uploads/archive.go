@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,7 +71,7 @@ func ExtractTaxDocumentArchive(encryptionKeyring Keyring, contents []byte, extra
 			continue
 		}
 		if filepath.IsAbs(entry.Name) || strings.Contains(entry.Name, "\\") || !isInsideDirectory(importDirectory, entryDestination) || entry.FileInfo().Mode()&os.ModeSymlink != 0 {
-			return ExtractedTaxDocumentArchive{}, &ArchiveImportError{Message: "Bad", StatusCode: 400}
+			return ExtractedTaxDocumentArchive{}, &ArchiveImportError{Message: "Archive contains an unsafe entry path.", StatusCode: 400}
 		}
 		if strings.HasSuffix(entry.Name, "/") {
 			plannedEntries = append(plannedEntries, plannedArchiveEntry{directory: true, destination: entryDestination})
@@ -82,7 +81,10 @@ func ExtractTaxDocumentArchive(encryptionKeyring Keyring, contents []byte, extra
 		if err != nil {
 			return ExtractedTaxDocumentArchive{}, &ArchiveImportError{Message: "Choose a valid ZIP archive.", StatusCode: 400}
 		}
-		contentType := mime.TypeByExtension(filepath.Ext(entry.Name))
+		contentType, _, valid := detectDocumentType(entryContents)
+		if !valid {
+			return ExtractedTaxDocumentArchive{}, &ArchiveImportError{Message: "Archive contains an unsupported tax document.", StatusCode: 400}
+		}
 		if contentType == "" {
 			contentType = "application/octet-stream"
 		}
