@@ -24,6 +24,20 @@ Start the app at <http://localhost:3030>:
 go run ./cmd/server
 ```
 
+## Docker
+
+Build the image:
+
+```sh
+docker build -t bearly-secure .
+```
+
+Confirm runtime user ID is non-zero:
+
+```sh
+docker run --rm --entrypoint id bearly-secure -u
+```
+
 ## Attacker Lab
 
 In another terminal, start the browser-based attacker lab at <http://localhost:4040>:
