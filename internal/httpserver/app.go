@@ -277,6 +277,7 @@ func New(database *sql.DB, logger *logging.Logger, options Options) (*Applicatio
 	mainMux.Handle("GET /shipping-widget.js", staticHandler)
 	mainMux.Handle("GET /product-photos/{filename}", staticHandler)
 	mainMux.HandleFunc("POST /integrations/pawpal/webhook", pawPalHandler.Webhook)
+	dynamicMux.HandleFunc("GET /.well-known/security.txt", securityText)
 	mainMux.Handle("/", dynamicHandler)
 
 	handler := applyMiddleware(
@@ -291,6 +292,16 @@ func New(database *sql.DB, logger *logging.Logger, options Options) (*Applicatio
 
 func (application *Application) Close() error {
 	return application.publicRoot.Close()
+}
+
+func securityText(responseWriter http.ResponseWriter, _ *http.Request) {
+	expires := time.Now().UTC().Add(180 * 24 * time.Hour).Format("2006-01-02T15:04:05.000Z")
+	responseWriter.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintf(
+		responseWriter,
+		"Contact: mailto:security@bearlysecure.example\nPolicy: https://bearlysecure.example/security-policy\nExpires: %s\n",
+		expires,
+	)
 }
 
 func newStaticHandler(publicRoot *os.Root) http.Handler {
